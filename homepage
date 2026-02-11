@@ -376,7 +376,6 @@ a.btn:hover, button.btn:hover{
   <div id="lockedPopup" class="locked-popup">Please wait…</div>
 
   <script>
-    // Countdown ends EXACTLY at: Feb 18, 2026 4:00 PM in America/New_York (EST/EDT safe)
     const TZ = "America/New_York";
 
     const elHH = document.getElementById("hh");
@@ -421,7 +420,6 @@ a.btn:hover, button.btn:hover{
       return utcGuess - offset;
     }
 
-    // ✅ Fixed target: Feb 18 2026 @ 16:00 in New York time
     const TARGET_MS = zonedTimeToUtcMs({
       year: 2026,
       month: 2,
@@ -453,11 +451,9 @@ a.btn:hover, button.btn:hover{
     tick();
     setInterval(tick, 250);
 
-    // --- LOCKED POPUP (Part 04) ---
     const lockedBtn = document.getElementById("locked4");
     const popup = document.getElementById("lockedPopup");
 
-    // prevent clicking (still hoverable)
     lockedBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -474,7 +470,7 @@ a.btn:hover, button.btn:hover{
     function positionPopup(){
       const rect = lockedBtn.getBoundingClientRect();
       popup.style.left = (rect.left + rect.width / 2) + "px";
-      popup.style.top  = (rect.top - 12) + "px"; // hover above button
+      popup.style.top  = (rect.top - 12) + "px"; 
     }
 
     lockedBtn.addEventListener("mouseenter", () => {
@@ -506,3 +502,4 @@ a.btn:hover, button.btn:hover{
   </script>
 </body>
 </html>
+
