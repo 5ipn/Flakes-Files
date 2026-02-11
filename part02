@@ -467,7 +467,6 @@ By the end of the month, the truth was obvious. James didn’t return because he
   <div id="lockedPopup" class="locked-popup">Please wait…</div>
 
   <script>
-    // ---- NAME HIGHLIGHTING ----
     const MANUAL_NAMES = [
       "Morse","Itz_dev","Noom","Staroflight","ZylozVA","Lexie","Zonez","Val","KindlyVernon",
       "Seppgen","CXI","Jens","Noah","Chloe","Ronaldo","Leanne","Bugz","Tripl3tsgamer",
@@ -544,7 +543,6 @@ By the end of the month, the truth was obvious. James didn’t return because he
       wrapMatchesInElement(root, re);
     }
 
-    // ---- AUTO SCROLL (30s) ----
     function startAutoScroll(){
       const panel = document.querySelector(".content");
       if (!panel) return;
@@ -599,7 +597,6 @@ By the end of the month, the truth was obvious. James didn’t return because he
       rafId = requestAnimationFrame(step);
     }
 
-    // ---- COUNTDOWN TARGET: tomorrow 4:00 PM America/New_York ----
     function getNYParts(date){
       const dtf = new Intl.DateTimeFormat("en-US", {
         timeZone: "America/New_York",
@@ -616,11 +613,8 @@ By the end of the month, the truth was obvious. James didn’t return because he
       };
     }
 
-    // Convert a NY "wall clock" time to a real Date (UTC) robustly
     function nyWallClockToDate(y,m,d,hh,mm,ss){
-      // Initial guess in UTC
       let guess = new Date(Date.UTC(y, m-1, d, hh, mm, ss));
-      // Iterate to correct timezone offset
       for (let i=0; i<4; i++){
         const p = getNYParts(guess);
         const desired = Date.UTC(y, m-1, d, hh, mm, ss);
@@ -635,7 +629,6 @@ By the end of the month, the truth was obvious. James didn’t return because he
     function getTargetDateTomorrow4pmNY(){
       const now = new Date();
       const nyNow = getNYParts(now);
-      // tomorrow in NY
       const tmp = new Date(Date.UTC(nyNow.y, nyNow.m-1, nyNow.d + 1, 12, 0, 0));
       const nyTomorrow = getNYParts(tmp);
       return nyWallClockToDate(nyTomorrow.y, nyTomorrow.m, nyTomorrow.d, 16, 0, 0);
@@ -650,13 +643,11 @@ By the end of the month, the truth was obvious. James didn’t return because he
       return `${h}h ${m}m ${s}s remaining`;
     }
 
-    // ---- LOCKED POPUP ----
     (function initLockedPopup(){
       const lockedBtn = document.getElementById("locked3");
       const popup = document.getElementById("lockedPopup");
       if (!lockedBtn || !popup) return;
 
-      // block clicks but allow hover
       lockedBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -704,7 +695,6 @@ By the end of the month, the truth was obvious. James didn’t return because he
       });
     })();
 
-    // Run highlight first, then autoscroll after layout settles
     window.addEventListener("load", () => {
       runNameHighlight();
       setTimeout(startAutoScroll, 250);
@@ -712,3 +702,4 @@ By the end of the month, the truth was obvious. James didn’t return because he
   </script>
 </body>
 </html>
+
