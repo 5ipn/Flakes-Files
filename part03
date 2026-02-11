@@ -540,7 +540,6 @@
   <div id="lockedPopup" class="locked-popup">Please wait…</div>
 
   <script>
-    // ---- NAME HIGHLIGHTING ----
     const MANUAL_NAMES = [
       "Morse","Itz_dev","Noom","Staroflight","ZylozVA","Lexie","Zonez","Val","KindlyVernon",
       "Seppgen","CXI","Jens","Noah","Chloe","Ronaldo","Leanne","Bugz","Tripl3tsgamer",
@@ -619,7 +618,6 @@
       wrapMatchesInElement(root, re);
     }
 
-    // ---- AUTO SCROLL (30s) ----
     function startAutoScroll(){
       const panel = document.querySelector(".content");
       if (!panel) return;
@@ -674,7 +672,6 @@
       rafId = requestAnimationFrame(step);
     }
 
-    // ---- LOCKED POPUP (Part 04) ----
     const TZ = "America/New_York";
 
     function getPartsInTZ(date, timeZone){
@@ -748,7 +745,6 @@
       const popup = document.getElementById("lockedPopup");
       if (!lockedBtn || !popup) return;
 
-      // never navigate
       lockedBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -797,3 +793,4 @@
   </script>
 </body>
 </html>
+
