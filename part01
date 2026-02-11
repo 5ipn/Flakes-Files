@@ -460,8 +460,7 @@ a.btn:hover, button.btn:hover{
   <div id="lockedPopup" class="locked-popup">Please wait…</div>
 
   <script>
-    // ---- NAME HIGHLIGHTING ----
-    const MANUAL_NAMES = [
+const MANUAL_NAMES = [
       "Morse","Itz_dev","Noom","Staroflight","ZylozVA","Lexie","Zonez","Val",
       "KindlyVernon","Seppgen","CXI","Jens","Noah","Chloe","Ronaldo","Leanne","Bugz","Tripl3tsgamer"
     ];
@@ -536,7 +535,6 @@ a.btn:hover, button.btn:hover{
       wrapMatchesInElement(root, re);
     }
 
-    // ---- AUTO SCROLL (30s) ----
     function startAutoScroll(){
       const panel = document.querySelector(".content");
       if (!panel) return;
@@ -591,7 +589,6 @@ a.btn:hover, button.btn:hover{
       rafId = requestAnimationFrame(step);
     }
 
-    // ---- COUNTDOWN TARGET: tomorrow 4:00 PM America/New_York ----
     function getNYParts(date){
       const dtf = new Intl.DateTimeFormat("en-US", {
         timeZone: "America/New_York",
@@ -635,13 +632,11 @@ a.btn:hover, button.btn:hover{
       return `${h}h ${m}m ${s}s remaining`;
     }
 
-    // ---- LOCKED POPUP ----
     (function initLockedPopup(){
       const lockedBtn = document.getElementById("locked3");
       const popup = document.getElementById("lockedPopup");
       if (!lockedBtn || !popup) return;
 
-      // block clicks but allow hover
       lockedBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -695,3 +690,4 @@ a.btn:hover, button.btn:hover{
   </script>
 </body>
 </html>
+
