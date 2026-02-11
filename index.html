@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flakes Files</title>
+  <style>
+    :root{
+      --bg1:#0c0f12;
+      --bg2:#14171b;
+      --card:#1b1f24;
+      --text:#e9eef5;
+      --muted:#7b8794;
+      --stroke:rgba(255,255,255,.08);
+      --shadow:rgba(0,0,0,.55);
+      --red:#ff3b30;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      margin:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(1200px 600px at 50% 30%, rgba(255,255,255,.06), transparent 60%),
+        radial-gradient(900px 500px at 50% 80%, rgba(0,0,0,.35), transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg1));
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      overflow:hidden;
+    }
+
+    /* subtle film/noise */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-40px;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(255,255,255,.02) 0px,
+          rgba(255,255,255,.02) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+      opacity:.25;
+      pointer-events:none;
+      filter: blur(.2px);
+      transform: rotate(-2deg);
+    }
+
+    /* vignette */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      background: radial-gradient(circle at 50% 45%, transparent 40%, rgba(0,0,0,.55) 90%);
+      pointer-events:none;
+    }
+
+    /* 5PN signature (top-left) */
+    .sig-5pn{
+      position: fixed;
+      top: 14px;
+      left: 16px;
+      z-index: 9999;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight: 900;
+      letter-spacing: .22em;
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      text-transform: uppercase;
+      user-select: none;
+      pointer-events: none;
+      text-shadow: 0 2px 10px rgba(0,0,0,.55);
+    }
+
+    .wrap{
+      width:min(920px, 92vw);
+      text-align:center;
+      position:relative;
+      z-index:1;
+      padding:28px 18px;
+    }
+
+    .live{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:rgba(255,255,255,.55);
+      letter-spacing:.45em;
+      font-size:11px;
+      text-transform:uppercase;
+      margin-bottom:10px;
+      user-select:none;
+    }
+    .dot{
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--red);
+      box-shadow:0 0 14px rgba(255,59,48,.65);
+    }
+
+    h1{
+      margin:6px 0 22px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight:800;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-size: clamp(34px, 5.2vw, 64px);
+      text-shadow: 0 2px 0 rgba(0,0,0,.35);
+    }
+
+    .timer-row{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+      margin-top:6px;
+    }
+
+    .card{
+      width: min(220px, 26vw);
+      height: min(160px, 20vw);
+      min-width: 150px;
+      min-height: 118px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow:
+        0 18px 40px var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -10px 30px rgba(0,0,0,.35);
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(600px 260px at 50% 20%, rgba(255,255,255,.06), transparent 55%),
+        linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.35));
+      opacity:.85;
+      pointer-events:none;
+    }
+
+    .value{
+      position:relative;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-weight:900;
+      font-size: clamp(46px, 7vw, 86px);
+      letter-spacing:.06em;
+      line-height:1;
+      text-shadow: 0 2px 0 rgba(0,0,0,.55);
+    }
+
+    .label{
+      position:relative;
+      margin-top:14px;
+      font-size:10px;
+      letter-spacing:.5em;
+      color:rgba(255,255,255,.40);
+      text-transform:uppercase;
+      user-select:none;
+    }
+
+    .separators{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      transform: translateY(-6px);
+      opacity:.55;
+    }
+    .sep-dot{
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:rgba(255,255,255,.60);
+      box-shadow:0 0 0 1px rgba(0,0,0,.25);
+    }
+
+    /* navigation buttons */
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      margin-top:18px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:2;
+    }
+
+    a.btn{
+      text-decoration:none;
+      color:rgba(255,255,255,.85);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      padding:10px 14px;
+      border-radius:12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size:12px;
+      position:relative;
+    }
+    a.btn:hover{ background: rgba(255,255,255,.06); }
+
+    /* LOCKED button — still hoverable, not clickable */
+    a.btn.locked{
+      opacity: 0.38;
+      cursor: not-allowed;
+      padding-left: 30px;
+      user-select:none;
+    }
+    a.btn.locked::before{
+      content:"";
+      position:absolute;
+      left:10px;
+      top:50%;
+      transform:translateY(-50%);
+      width:14px;
+      height:14px;
+      background-color: rgba(255,255,255,.85);
+      -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 10.73V17a1 1 0 1 1-2 0v-.27a2 2 0 1 1 2 0Z'/></svg>") no-repeat center / contain;
+              mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 10.73V17a1 1 0 1 1-2 0v-.27a2 2 0 1 1 2 0Z'/></svg>") no-repeat center / contain;
+    }
+/* Hover effect back for ALL buttons */
+a.btn:hover, button.btn:hover{
+  background: rgba(255,255,255,.06);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(0,0,0,.42);
+}
+
+/* Locked button that still HOVERS (no emoji, consistent SVG lock) */
+.btn.locked{
+  opacity:.62;
+  cursor:not-allowed;
+  position:relative;
+  border-color: rgba(255,255,255,.10);
+  overflow:hidden;
+}
+
+/* SVG lock icon (consistent across browsers) */
+.btn.locked::before{
+  content:"";
+  width:14px;
+  height:14px;
+  display:inline-block;
+  flex: 0 0 14px;
+  opacity:.95;
+
+  /* White lock using mask so it inherits cleanly */
+  background: rgba(255,255,255,.85);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm7 13H7v-9h10v9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm7 13H7v-9h10v9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Diagonal locked sheen (like a “disabled” card) */
+.btn.locked::after{
+  content:"";
+  position:absolute;
+  inset:-40% -40%;
+  background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,.08) 50%, transparent 100%);
+  transform: translateX(-60%) rotate(8deg);
+  opacity:.55;
+  pointer-events:none;
+}
+
+/* Locked tooltip (optional, but matches the vibe) */
+.btn.locked[data-tip]::marker{ content:""; }
+.btn.locked[data-tip]:hover .tip{ opacity:1; transform: translateX(-50%) translateY(-2px); }
+
+.btn.locked .tip{
+  position:absolute;
+  left:50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.70);
+  color: rgba(255,255,255,.88);
+  font-size: 11px;
+  letter-spacing: .12em;
+  white-space: nowrap;
+  box-shadow: 0 16px 36px rgba(0,0,0,.55);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .12s ease, transform .12s ease;
+}
+
+    /* Popup tooltip for locked */
+    .locked-popup{
+      position: fixed;
+      padding: 8px 12px;
+      background: rgba(0,0,0,.78);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.55);
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -10px);
+      transition: opacity .18s ease, transform .18s ease;
+      white-space: nowrap;
+      z-index: 999999;
+      letter-spacing: .02em;
+    }
+
+    @media (max-width: 420px){
+      .timer-row{ gap:12px; }
+      .separators{ gap:8px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sig-5pn">5PN - FLAKES FILES</div>
+
+  <main class="wrap">
+    <div class="live"><span class="dot"></span>LIVE</div>
+    <h1>FLAKES FILES</h1>
+
+    <div class="timer-row" aria-label="Countdown timer">
+      <div class="card">
+        <div class="value" id="hh">00</div>
+        <div class="label">HOURS</div>
+      </div>
+
+      <div class="separators" aria-hidden="true">
+        <div class="sep-dot"></div>
+        <div class="sep-dot"></div>
+      </div>
+
+      <div class="card">
+        <div class="value" id="mm">00</div>
+        <div class="label">MINUTES</div>
+      </div>
+
+      <div class="separators" aria-hidden="true">
+        <div class="sep-dot"></div>
+        <div class="sep-dot"></div>
+      </div>
+
+      <div class="card">
+        <div class="value" id="ss">00</div>
+        <div class="label">SECONDS</div>
+      </div>
+    </div>
+
+    <!-- Page navigation -->
+    <div class="actions">
+      <a class="btn" href="bot.html">Open File - Part 01</a>
+      <a class="btn" href="part02.html">Open File - Part 02</a>
+      <a class="btn" href="part03.html">Open File - Part 03</a>
+
+      <!-- Locked Part 04 (hover shows popup) -->
+      <a class="btn locked" id="locked4" href="#" aria-disabled="true">Open File - Part 04</a>
+    </div>
+  </main>
+
+  <!-- popup element -->
+  <div id="lockedPopup" class="locked-popup">Please wait…</div>
+
+  <script>
+    // Countdown ends EXACTLY at: Feb 18, 2026 4:00 PM in America/New_York (EST/EDT safe)
+    const TZ = "America/New_York";
+
+    const elHH = document.getElementById("hh");
+    const elMM = document.getElementById("mm");
+    const elSS = document.getElementById("ss");
+    const pad2 = (n) => String(n).padStart(2, "0");
+
+    function getPartsInTZ(date, timeZone){
+      const dtf = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+      const parts = dtf.formatToParts(date);
+      const map = {};
+      for (const p of parts) if (p.type !== "literal") map[p.type] = p.value;
+      return {
+        year: Number(map.year),
+        month: Number(map.month),
+        day: Number(map.day),
+        hour: Number(map.hour),
+        minute: Number(map.minute),
+        second: Number(map.second)
+      };
+    }
+
+    function tzOffsetMs(timeZone, date){
+      const p = getPartsInTZ(date, timeZone);
+      const asUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+      return asUTC - date.getTime();
+    }
+
+    function zonedTimeToUtcMs({year, month, day, hour, minute, second}, timeZone){
+      const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second || 0);
+      const guessDate = new Date(utcGuess);
+      const offset = tzOffsetMs(timeZone, guessDate);
+      return utcGuess - offset;
+    }
+
+    // ✅ Fixed target: Feb 18 2026 @ 16:00 in New York time
+    const TARGET_MS = zonedTimeToUtcMs({
+      year: 2026,
+      month: 2,
+      day: 18,
+      hour: 16,
+      minute: 0,
+      second: 0
+    }, TZ);
+
+    function getRemainingParts(){
+      let diffMs = TARGET_MS - Date.now();
+      if (diffMs < 0) diffMs = 0;
+
+      const totalSeconds = Math.floor(diffMs / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      return { diffMs, hours, minutes, seconds };
+    }
+
+    function tick(){
+      const { hours, minutes, seconds } = getRemainingParts();
+      elHH.textContent = pad2(hours);
+      elMM.textContent = pad2(minutes);
+      elSS.textContent = pad2(seconds);
+    }
+
+    tick();
+    setInterval(tick, 250);
+
+    // --- LOCKED POPUP (Part 04) ---
+    const lockedBtn = document.getElementById("locked4");
+    const popup = document.getElementById("lockedPopup");
+
+    // prevent clicking (still hoverable)
+    lockedBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    function formatWaitText(){
+      const { diffMs, hours, minutes, seconds } = getRemainingParts();
+      if (diffMs <= 0) return "Please wait… Unlocking soon";
+      return `Please wait… ${pad2(hours)}h ${pad2(minutes)}m ${pad2(seconds)}s`;
+    }
+
+    let hoverInterval = null;
+
+    function positionPopup(){
+      const rect = lockedBtn.getBoundingClientRect();
+      popup.style.left = (rect.left + rect.width / 2) + "px";
+      popup.style.top  = (rect.top - 12) + "px"; // hover above button
+    }
+
+    lockedBtn.addEventListener("mouseenter", () => {
+      popup.textContent = formatWaitText();
+      positionPopup();
+      popup.style.opacity = "1";
+      popup.style.transform = "translate(-50%, -18px)";
+
+      if (hoverInterval) clearInterval(hoverInterval);
+      hoverInterval = setInterval(() => {
+        popup.textContent = formatWaitText();
+        positionPopup();
+      }, 250);
+    });
+
+    lockedBtn.addEventListener("mouseleave", () => {
+      popup.style.opacity = "0";
+      popup.style.transform = "translate(-50%, -10px)";
+      if (hoverInterval) clearInterval(hoverInterval);
+      hoverInterval = null;
+    });
+
+    window.addEventListener("resize", () => {
+      if (popup.style.opacity === "1") positionPopup();
+    });
+    window.addEventListener("scroll", () => {
+      if (popup.style.opacity === "1") positionPopup();
+    }, { passive: true });
+  </script>
+</body>
+</html>

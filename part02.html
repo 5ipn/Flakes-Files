@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flakes Files - Part 02</title>
+
+  <style>
+    :root{
+      --bg1:#0c0f12;
+      --bg2:#14171b;
+      --text:#e9eef5;
+      --muted:#7b8794;
+      --stroke:rgba(255,255,255,.08);
+      --shadow:rgba(0,0,0,.55);
+      --red:#ff3b30;
+
+      --name-bg: rgba(255,255,255,.08);
+      --name-br: rgba(255,255,255,.14);
+      --name-tx: rgba(255,255,255,.92);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      margin:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(1200px 600px at 50% 30%, rgba(255,255,255,.06), transparent 60%),
+        radial-gradient(900px 500px at 50% 80%, rgba(0,0,0,.35), transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg1));
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      overflow:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-40px;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(255,255,255,.02) 0px,
+          rgba(255,255,255,.02) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+      opacity:.25;
+      pointer-events:none;
+      filter: blur(.2px);
+      transform: rotate(-2deg);
+    }
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      background: radial-gradient(circle at 50% 45%, transparent 40%, rgba(0,0,0,.55) 90%);
+      pointer-events:none;
+    }
+
+    /* ✅ 5PN signature */
+    .sig-5pn{
+      position: fixed;
+      top: 14px;
+      left: 16px;
+      z-index: 9999;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-weight: 900;
+      letter-spacing: .22em;
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      text-transform: uppercase;
+      user-select: none;
+      pointer-events: none;
+      text-shadow: 0 2px 10px rgba(0,0,0,.55);
+    }
+
+    .wrap{
+      width:min(920px, 92vw);
+      text-align:center;
+      position:relative;
+      z-index:1;
+      padding:28px 18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+    }
+
+    .live{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:rgba(255,255,255,.55);
+      letter-spacing:.45em;
+      font-size:11px;
+      text-transform:uppercase;
+      user-select:none;
+    }
+    .dot{
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--red);
+      box-shadow:0 0 14px rgba(255,59,48,.65);
+    }
+
+    .big{
+      margin:0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-weight:900;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-size: clamp(42px, 6vw, 90px);
+      text-shadow: 0 2px 0 rgba(0,0,0,.55);
+      line-height:1;
+      white-space: nowrap;
+    }
+
+    .card{
+      width:min(860px, 94vw);
+      height:460px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow:
+        0 18px 40px var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -10px 30px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+      padding:22px 22px;
+      text-align:left;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(700px 260px at 50% 10%, rgba(255,255,255,.06), transparent 55%),
+        linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.35));
+      opacity:.85;
+      pointer-events:none;
+    }
+
+    .content{
+      position:absolute;
+      top:22px;
+      left:22px;
+      right:22px;
+      bottom:78px;
+      overflow-y:auto;
+      padding-right:14px;
+      z-index:2;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.22) rgba(255,255,255,0.06);
+      scroll-behavior: smooth;
+    }
+
+    .content::-webkit-scrollbar{ width:10px; }
+    .content::-webkit-scrollbar-track{
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+    }
+    .content::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.18);
+      border-radius: 10px;
+      border: 2px solid rgba(0,0,0,0.35);
+      box-shadow: 0 0 12px rgba(255,255,255,0.08);
+    }
+    .content::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,0.28); }
+
+    .title{
+      margin:0 0 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size:14px;
+      color:rgba(255,255,255,.75);
+    }
+
+    /* Sticky titles */
+    .content .title{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      padding: 6px 6px;
+      margin: 0 0 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+
+    p{
+      margin:0 0 12px;
+      color:rgba(233,238,245,.86);
+      line-height:1.65;
+      font-size:15px;
+    }
+
+    /* Name highlight */
+    .nm{
+      display:inline-block;
+      padding: 1px 6px;
+      margin: 0 1px;
+      border-radius: 999px;
+      background: var(--name-bg);
+      border: 1px solid var(--name-br);
+      color: var(--name-tx);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size: 0.95em;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
+    .muted{
+      position:absolute;
+      bottom:18px;
+      left:22px;
+      right:22px;
+      z-index:3;
+      background:rgba(0,0,0,.22);
+      padding:8px 12px;
+      border-radius:8px;
+      font-size:13px;
+      color:rgba(255,255,255,.65);
+      letter-spacing:.04em;
+      backdrop-filter:blur(5px);
+      pointer-events:none;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      margin-top:6px;
+      flex-wrap:wrap;
+    }
+
+    a.btn{
+      text-decoration:none;
+      color:rgba(255,255,255,.85);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      padding:10px 14px;
+      border-radius:12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size:12px;
+    }
+    a.btn:hover{ background: rgba(255,255,255,.06); }
+
+    /* Locked button: allow hover, block click in JS */
+    .btn.locked{
+      opacity: 0.33;
+      cursor: not-allowed;
+      position: relative;
+      padding-left: 30px;
+      user-select:none;
+    }
+    .btn.locked::before{
+      content:"";
+      position:absolute;
+      left:10px;
+      top:50%;
+      transform:translateY(-50%);
+      width:14px;
+      height:14px;
+      background-color: rgba(255,255,255,.85);
+      -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 10.73V17a1 1 0 1 1-2 0v-.27a2 2 0 1 1 2 0Z'/></svg>") no-repeat center / contain;
+              mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 10.73V17a1 1 0 1 1-2 0v-.27a2 2 0 1 1 2 0Z'/></svg>") no-repeat center / contain;
+    }
+/* Hover effect back for ALL buttons */
+a.btn:hover, button.btn:hover{
+  background: rgba(255,255,255,.06);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(0,0,0,.42);
+}
+
+/* Locked button that still HOVERS (no emoji, consistent SVG lock) */
+.btn.locked{
+  opacity:.62;
+  cursor:not-allowed;
+  position:relative;
+  border-color: rgba(255,255,255,.10);
+  overflow:hidden;
+}
+
+/* SVG lock icon (consistent across browsers) */
+.btn.locked::before{
+  content:"";
+  width:14px;
+  height:14px;
+  display:inline-block;
+  flex: 0 0 14px;
+  opacity:.95;
+
+  /* White lock using mask so it inherits cleanly */
+  background: rgba(255,255,255,.85);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm7 13H7v-9h10v9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V7Zm7 13H7v-9h10v9Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Diagonal locked sheen (like a “disabled” card) */
+.btn.locked::after{
+  content:"";
+  position:absolute;
+  inset:-40% -40%;
+  background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,.08) 50%, transparent 100%);
+  transform: translateX(-60%) rotate(8deg);
+  opacity:.55;
+  pointer-events:none;
+}
+
+/* Locked tooltip (optional, but matches the vibe) */
+.btn.locked[data-tip]::marker{ content:""; }
+.btn.locked[data-tip]:hover .tip{ opacity:1; transform: translateX(-50%) translateY(-2px); }
+
+.btn.locked .tip{
+  position:absolute;
+  left:50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.70);
+  color: rgba(255,255,255,.88);
+  font-size: 11px;
+  letter-spacing: .12em;
+  white-space: nowrap;
+  box-shadow: 0 16px 36px rgba(0,0,0,.55);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .12s ease, transform .12s ease;
+}
+
+    big{
+      display:block;
+      text-align:center;
+      margin: 14px 0 6px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: rgba(255,255,255,.92);
+    }
+
+    /* Popup */
+    .locked-popup{
+      position: fixed; /* FIXED so it isn't trapped inside flex layout */
+      padding: 8px 12px;
+      background: rgba(0,0,0,.75);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.85);
+      font-size: 12px;
+      border-radius: 10px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.45);
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -8px);
+      transition: opacity .18s ease, transform .18s ease;
+      white-space: nowrap;
+      z-index: 999999;
+    }
+    .locked-popup.show{
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sig-5pn">5PN - FLAKES FILES</div>
+
+  <main class="wrap">
+    <div class="live"><span class="dot"></span>LIVE</div>
+    <h1 class="big">FLAKES FILES - PART 02</h1>
+
+    <section class="card">
+      <div class="content" id="fileContent">
+
+        <!-- Titles only (no "Part 1:" prefixes), as requested -->
+        <div class="title">The October Comeback</div>
+        <p>
+After months of disappearing, Flakes, also known as James, suddenly came crawling back into the SJC community in October. Everyone was shocked, because the last time he left, he burned half the server on his way out. But there he was again, in his same pastel skirts, thigh highs, cat ears, and fake uwu personality, acting like nothing ever happened.
+        </p>
+<p>James kept reminding people he was 22 and turning 23 soon, like that somehow made him wiser or more responsible. But honestly he acted nothing like an adult. People like Noom, Staroflight, Itz_dev, Malb, and a bunch of others instantly noticed the same strange energy around him. He acted sweet, but in the same fake, over-the-top way he always had.</p>
+<p>He came back claiming he wanted to “help the community,” but everyone could tell something was off. He didn’t return for friends. He returned for clout.</p>
+        <div class="title">The Fake Giveaways for Popularity</div>
+        <p>
+          When James showed up again, the first thing he did was host giveaways. But not because he wanted to be generous. He wanted to regain popularity, rebuild his reputation, and climb back up the SJC ranks.
+        </p>
+<p>He advertised everything as “big events hosted by Flakes,” like he was some celebrity returning from a world tour. Every giveaway announcement felt like a promo for himself, not the actual prize.</p>
+<p>People like ZylozVA, tripl3tsgamer, Lexie, Zonez, Val, KindlyVernon, Seppgen, CXI, Jens, noah, chloe, Morse, ronaldo, leanne, Bugz, and Malb all noticed the same thing. He only hosted events when it benefited him. If it didn’t boost his popularity or make people praise him, he didn’t bother.</p>
+<p>It was obvious he wasn’t helping the community. He was trying to make himself look like a hero.</p>
+        <div class="title">The Source of His Robux</div>
+        <p>
+James made himself look rich, but everyone eventually found out that none of the Robux he gave away was his own.<br>
+Almost all of it came from offshore 15-year-old farmers who grinded PLS DONATE on Roblox all day. They funneled their earnings through alts and sold it under the table to people like James.
+        </p>
+        <p>On top of that, James was constantly begging rich players for money. The list was long too.
+<br>He begged Haz3mn, Zenuux, Vrevix, Sri, Quinn, Rox, rrwxva, PrinseElias, Inviz, Vexezifps, and Shlopiezz nonstop.
+</p>
+<p>He didn’t befriend any of them for actual friendship. He used them for their wallets.</p>
+<p>Even Malb said that whenever James messaged him, it was always about needing “a little boost” or “help reaching a goal,” never an actual conversation.</p>
+<p>James acted like the Robux was his, but everyone knew it wasn’t. It was farmed, begged for, or manipulated out of wealthier players.</p>
+        <div class="title">Manipulating His Way Back Up</div>
+        <p>
+As October went on, James got more aggressive with trying to rebuild his reputation. He showed up to every SJC event, acted overly friendly, and pretended he cared about the community. But people who knew him before saw through it instantly.        </p>
+<p>
+    Noom kept warning people that James was doing it all for attention.
+<br>Staroflight said she recognized the same patterns he had before he left.
+<br>Itz_dev straight up said he wasn’t fooled for a second.
+<br>Even Malb, who usually stays neutral, said that James felt “different but not in a good way.”
+</p>
+<p>James tried to convince newer members that he was some big positive influence in SJC, while older members remembered the scams, lies, and drama he caused.</p>
+<p>
+    He didn’t want forgiveness.
+<br>He wanted power.
+<br>He wanted status.
+<br>He wanted everyone to say “Flakes is back and better than ever.”
+</p>
+<p>Even though everyone knew he was still the same manipulative dude under the surface.</p>
+        <div class="title">The Truth Behind Flakes’ “Return”</div>
+        <p>
+By the end of the month, the truth was obvious. James didn’t return because he missed the community. He didn’t return to fix things or apologize.        </p>
+<p>
+    He came back to rebuild his image and get back to the top.
+<br>Every event he hosted was for attention.
+<br>Every giveaway was for popularity.
+<br>Every conversation he had was calculated.
+<br>Every rich player he messaged was another wallet he wanted access to.
+</p>
+<p>People like Lexie, Zonez, Val, Malb, and Bugz all confirmed the same thing. Nothing about his return was genuine.</p>
+<p>James might have rebranded himself as Flakes again, but he was still the same person who used everyone, begged for Robux, cut off friends, and tried to climb ranks through manipulation instead of honesty.</p>
+<p>And the worst part was that he genuinely believed nobody remembered what he did.</p>
+<br>
+<br>
+<big>But the SJC community remembered everything.</big>
+</div>
+
+      <p class="muted">
+        Safety note: please avoid this person and their devious activites on DISCORD and SJC at all costs.
+      </p>
+    </section>
+
+    <div class="actions">
+      <a class="btn" href="bot.html">← Back to Part 01</a>
+      <a class="btn" href="index.html">Home</a>
+
+      <!-- IMPORTANT: id="locked3" so the popup JS can find it -->
+<a class="btn" href="part03.html">Next File - Part 03</a>
+    </div>
+  </main>
+
+  <!-- Popup element (keep near end of body) -->
+  <div id="lockedPopup" class="locked-popup">Please wait…</div>
+
+  <script>
+    // ---- NAME HIGHLIGHTING ----
+    const MANUAL_NAMES = [
+      "Morse","Itz_dev","Noom","Staroflight","ZylozVA","Lexie","Zonez","Val","KindlyVernon",
+      "Seppgen","CXI","Jens","Noah","Chloe","Ronaldo","Leanne","Bugz","Tripl3tsgamer",
+      "Haz3mn","Zenuux","Vrevix","Sri","Quinn","Rox","rrwxva","PrinseElias","Inviz","Vexezifps",
+      "Shlopiezz","Malb"
+    ];
+    const AUTO_DETECT = true;
+
+    function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+    function wrapMatchesInElement(rootEl, regex){
+      const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+        acceptNode(node){
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          const p = node.parentElement;
+          if (!p) return NodeFilter.FILTER_REJECT;
+          if (p.closest("script, style")) return NodeFilter.FILTER_REJECT;
+          if (p.closest(".nm")) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      for (const node of nodes){
+        const text = node.nodeValue;
+        if (!regex.test(text)) continue;
+        regex.lastIndex = 0;
+
+        const frag = document.createDocumentFragment();
+        let last = 0, m;
+
+        while ((m = regex.exec(text)) !== null){
+          const start = m.index;
+          const matchText = m[0];
+          if (start > last) frag.appendChild(document.createTextNode(text.slice(last, start)));
+
+          const span = document.createElement("span");
+          span.className = "nm";
+          span.textContent = matchText;
+          frag.appendChild(span);
+
+          last = start + matchText.length;
+        }
+
+        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    }
+
+    function collectAutoHandles(rootEl){
+      const fullText = rootEl.innerText || "";
+      const candidates = new Set();
+      const tokenRe = /\b[a-zA-Z0-9_]{3,20}\b/g;
+      for (const tok of fullText.match(tokenRe) || []){
+        if (tok.includes("_") || /\d/.test(tok)) candidates.add(tok);
+      }
+      return [...candidates];
+    }
+
+    function runNameHighlight(){
+      const root = document.getElementById("fileContent");
+      if (!root) return;
+
+      const names = new Set(MANUAL_NAMES.map(s => s.trim()).filter(Boolean));
+      if (AUTO_DETECT){
+        for (const n of collectAutoHandles(root)) names.add(n);
+      }
+      if (names.size === 0) return;
+
+      const list = [...names].sort((a,b) => b.length - a.length).map(escapeRegExp);
+      const re = new RegExp("\\b(" + list.join("|") + ")\\b", "g");
+      wrapMatchesInElement(root, re);
+    }
+
+    // ---- AUTO SCROLL (30s) ----
+    function startAutoScroll(){
+      const panel = document.querySelector(".content");
+      if (!panel) return;
+
+      const maxScroll = panel.scrollHeight - panel.clientHeight;
+      if (maxScroll <= 0) return;
+
+      const DURATION_MS = 30000;
+      let rafId = null;
+      let cancelled = false;
+
+      const cancel = () => {
+        if (cancelled) return;
+        cancelled = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        removeListeners();
+      };
+
+      const onUserIntent = () => cancel();
+
+      function addListeners() {
+        panel.addEventListener("wheel", onUserIntent, { passive: true });
+        panel.addEventListener("touchstart", onUserIntent, { passive: true });
+        panel.addEventListener("pointerdown", onUserIntent, { passive: true });
+        window.addEventListener("keydown", onUserIntent);
+      }
+
+      function removeListeners() {
+        panel.removeEventListener("wheel", onUserIntent);
+        panel.removeEventListener("touchstart", onUserIntent);
+        panel.removeEventListener("pointerdown", onUserIntent);
+        window.removeEventListener("keydown", onUserIntent);
+      }
+
+      function easeInOutCubic(t){
+        return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+      }
+
+      panel.scrollTop = 0;
+      const startTime = performance.now();
+
+      addListeners();
+
+      const step = (now) => {
+        if (cancelled) return;
+        const t = Math.min(1, (now - startTime) / DURATION_MS);
+        panel.scrollTop = maxScroll * easeInOutCubic(t);
+        if (t < 1) rafId = requestAnimationFrame(step);
+        else removeListeners();
+      };
+
+      rafId = requestAnimationFrame(step);
+    }
+
+    // ---- COUNTDOWN TARGET: tomorrow 4:00 PM America/New_York ----
+    function getNYParts(date){
+      const dtf = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        year:"numeric", month:"2-digit", day:"2-digit",
+        hour:"2-digit", minute:"2-digit", second:"2-digit",
+        hour12:false
+      });
+      const parts = dtf.formatToParts(date);
+      const map = {};
+      for (const p of parts) if (p.type !== "literal") map[p.type] = p.value;
+      return {
+        y: +map.year, m: +map.month, d: +map.day,
+        hh: +map.hour, mm: +map.minute, ss: +map.second
+      };
+    }
+
+    // Convert a NY "wall clock" time to a real Date (UTC) robustly
+    function nyWallClockToDate(y,m,d,hh,mm,ss){
+      // Initial guess in UTC
+      let guess = new Date(Date.UTC(y, m-1, d, hh, mm, ss));
+      // Iterate to correct timezone offset
+      for (let i=0; i<4; i++){
+        const p = getNYParts(guess);
+        const desired = Date.UTC(y, m-1, d, hh, mm, ss);
+        const got = Date.UTC(p.y, p.m-1, p.d, p.hh, p.mm, p.ss);
+        const diffMs = desired - got;
+        if (Math.abs(diffMs) < 1000) break;
+        guess = new Date(guess.getTime() + diffMs);
+      }
+      return guess;
+    }
+
+    function getTargetDateTomorrow4pmNY(){
+      const now = new Date();
+      const nyNow = getNYParts(now);
+      // tomorrow in NY
+      const tmp = new Date(Date.UTC(nyNow.y, nyNow.m-1, nyNow.d + 1, 12, 0, 0));
+      const nyTomorrow = getNYParts(tmp);
+      return nyWallClockToDate(nyTomorrow.y, nyTomorrow.m, nyTomorrow.d, 16, 0, 0);
+    }
+
+    function formatRemaining(ms){
+      if (ms <= 0) return "Unlocks soon";
+      const totalSec = Math.floor(ms/1000);
+      const h = Math.floor(totalSec/3600);
+      const m = Math.floor((totalSec%3600)/60);
+      const s = totalSec%60;
+      return `${h}h ${m}m ${s}s remaining`;
+    }
+
+    // ---- LOCKED POPUP ----
+    (function initLockedPopup(){
+      const lockedBtn = document.getElementById("locked3");
+      const popup = document.getElementById("lockedPopup");
+      if (!lockedBtn || !popup) return;
+
+      // block clicks but allow hover
+      lockedBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      let hovering = false;
+      const target = getTargetDateTomorrow4pmNY();
+
+      function setPopupPosition(){
+        const rect = lockedBtn.getBoundingClientRect();
+        popup.style.left = (rect.left + rect.width/2) + "px";
+        popup.style.top = (rect.top - 12) + "px";
+      }
+
+      function updateText(){
+        const diff = target.getTime() - Date.now();
+        popup.textContent = "Please wait… " + formatRemaining(diff);
+      }
+
+      lockedBtn.addEventListener("mouseenter", () => {
+        hovering = true;
+        setPopupPosition();
+        updateText();
+        popup.classList.add("show");
+      });
+
+      lockedBtn.addEventListener("mousemove", () => {
+        if (!hovering) return;
+        setPopupPosition();
+      });
+
+      lockedBtn.addEventListener("mouseleave", () => {
+        hovering = false;
+        popup.classList.remove("show");
+      });
+
+      setInterval(() => {
+        if (!hovering) return;
+        updateText();
+      }, 1000);
+
+      window.addEventListener("resize", () => {
+        if (!hovering) return;
+        setPopupPosition();
+      });
+    })();
+
+    // Run highlight first, then autoscroll after layout settles
+    window.addEventListener("load", () => {
+      runNameHighlight();
+      setTimeout(startAutoScroll, 250);
+    });
+  </script>
+</body>
+</html>

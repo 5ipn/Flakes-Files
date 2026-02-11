@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flakes Files - Part 03</title>
+
+  <style>
+    :root{
+      --bg1:#0c0f12;
+      --bg2:#14171b;
+      --text:#e9eef5;
+      --stroke:rgba(255,255,255,.08);
+      --shadow:rgba(0,0,0,.55);
+      --red:#ff3b30;
+
+      --name-bg: rgba(255,255,255,.08);
+      --name-br: rgba(255,255,255,.14);
+      --name-tx: rgba(255,255,255,.92);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      margin:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:
+        radial-gradient(1200px 600px at 50% 30%, rgba(255,255,255,.06), transparent 60%),
+        radial-gradient(900px 500px at 50% 80%, rgba(0,0,0,.35), transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg1));
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      overflow:hidden;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-40px;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(255,255,255,.02) 0px,
+          rgba(255,255,255,.02) 1px,
+          transparent 2px,
+          transparent 4px
+        );
+      opacity:.25;
+      pointer-events:none;
+      filter: blur(.2px);
+      transform: rotate(-2deg);
+    }
+
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      background: radial-gradient(circle at 50% 45%, transparent 40%, rgba(0,0,0,.55) 90%);
+      pointer-events:none;
+    }
+
+    .sig-5pn{
+      position: fixed;
+      top: 14px;
+      left: 16px;
+      z-index: 9999;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-weight: 900;
+      letter-spacing: .22em;
+      font-size: 12px;
+      color: rgba(255,255,255,.65);
+      text-transform: uppercase;
+      user-select: none;
+      pointer-events: none;
+      text-shadow: 0 2px 10px rgba(0,0,0,.55);
+    }
+
+    .wrap{
+      width:min(920px, 92vw);
+      text-align:center;
+      position:relative;
+      z-index:1;
+      padding:28px 18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:18px;
+    }
+
+    .live{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:rgba(255,255,255,.55);
+      letter-spacing:.45em;
+      font-size:11px;
+      text-transform:uppercase;
+      user-select:none;
+    }
+    .dot{
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--red);
+      box-shadow:0 0 14px rgba(255,59,48,.65);
+    }
+
+    .big{
+      margin:0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-weight:900;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      font-size: clamp(42px, 6vw, 90px);
+      text-shadow: 0 2px 0 rgba(0,0,0,.55);
+      line-height:1;
+      white-space: nowrap;
+    }
+
+    .card{
+      width:min(860px, 94vw);
+      height:460px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      box-shadow:
+        0 18px 40px var(--shadow),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -10px 30px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+      padding:22px 22px;
+      text-align:left;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(700px 260px at 50% 10%, rgba(255,255,255,.06), transparent 55%),
+        linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.35));
+      opacity:.85;
+      pointer-events:none;
+    }
+
+    .content{
+      position:absolute;
+      top:22px;
+      left:22px;
+      right:22px;
+      bottom:78px;
+      overflow-y:auto;
+      padding-right:14px;
+      z-index:2;
+
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.22) rgba(255,255,255,0.06);
+      scroll-behavior:smooth;
+    }
+
+    .content::-webkit-scrollbar{ width:10px; }
+    .content::-webkit-scrollbar-track{
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+    }
+    .content::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.18);
+      border-radius: 10px;
+      border: 2px solid rgba(0,0,0,0.35);
+      box-shadow: 0 0 12px rgba(255,255,255,0.08);
+    }
+    .content::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,0.28); }
+
+    .title{
+      margin:0 0 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-size:14px;
+      color:rgba(255,255,255,.75);
+    }
+
+    .content .title{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      padding: 6px 6px;
+      margin: 0 0 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+
+    p{
+      margin:0 0 12px;
+      color:rgba(233,238,245,.86);
+      line-height:1.65;
+      font-size:15px;
+    }
+
+    .nm{
+      display:inline-block;
+      padding: 1px 6px;
+      margin: 0 1px;
+      border-radius: 999px;
+      background: var(--name-bg);
+      border: 1px solid var(--name-br);
+      color: var(--name-tx);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size: 0.95em;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+
+    .muted{
+      position:absolute;
+      bottom:18px;
+      left:22px;
+      right:22px;
+      z-index:3;
+      background:rgba(0,0,0,.22);
+      padding:8px 12px;
+      border-radius:8px;
+      font-size:13px;
+      color:rgba(255,255,255,.65);
+      letter-spacing:.04em;
+      backdrop-filter:blur(5px);
+      pointer-events:none;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      margin-top:6px;
+      flex-wrap:wrap;
+    }
+
+    /* Buttons */
+    a.btn{
+      text-decoration:none;
+      color:rgba(255,255,255,.85);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      padding:10px 14px;
+      border-radius:12px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-size:12px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: transform .12s ease, background .12s ease, box-shadow .12s ease, opacity .12s ease;
+      position: relative;
+    }
+    a.btn:hover{
+      background: rgba(255,255,255,.06);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(0,0,0,.42);
+    }
+
+    /* Locked button (still hoverable, but unopenable) */
+    a.btn.locked{
+      opacity:.62;
+      cursor:not-allowed;
+      border-color: rgba(255,255,255,.10);
+      overflow:hidden;
+    }
+    a.btn.locked::before{
+      content:"";
+      width:14px;
+      height:14px;
+      display:inline-block;
+      flex:0 0 14px;
+      opacity:.95;
+      background: rgba(255,255,255,.85);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 10.73V17a1 1 0 1 1-2 0v-.27a2 2 0 1 1 2 0Z'/%3E%3C/svg%3E") center/contain no-repeat;
+              mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2Zm-7-2a2 2 0 1 1 4 0v2h-4V6Zm3 10.73V17a1 1 0 1 1-2 0v-.27a2 2 0 1 1 2 0Z'/%3E%3C/svg%3E") center/contain no-repeat;
+    }
+    a.btn.locked::after{
+      content:"";
+      position:absolute;
+      inset:-40% -40%;
+      background: linear-gradient(45deg, transparent 0%, rgba(255,255,255,.08) 50%, transparent 100%);
+      transform: translateX(-60%) rotate(8deg);
+      opacity:.55;
+      pointer-events:none;
+    }
+
+    big{
+      display:block;
+      text-align:center;
+      margin: 14px 0 6px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: rgba(255,255,255,.92);
+    }
+
+    ul.clean, ol.clean{
+      margin: 6px 0 14px 18px;
+      padding: 0;
+      color: rgba(233,238,245,.86);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+    ul.clean li, ol.clean li{ margin: 4px 0; }
+
+    /* Hover popup (rounded) */
+    .locked-popup{
+      position: fixed;
+      padding: 8px 12px;
+      background: rgba(0,0,0,.78);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      border-radius: 12px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 26px rgba(0,0,0,.55);
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -10px);
+      transition: opacity .18s ease, transform .18s ease;
+      white-space: nowrap;
+      z-index: 999999;
+      letter-spacing: .02em;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sig-5pn">5PN - FLAKES FILES</div>
+
+  <main class="wrap">
+    <div class="live"><span class="dot"></span>LIVE</div>
+    <h1 class="big">FLAKES FILES - PART 03</h1>
+
+    <section class="card">
+      <div class="content" id="fileContent">
+
+        <div class="title">The Robux Theft Era</div>
+        <p>
+          Everyone in SJC thought they already knew how messy Flakes was, but October and December proved they didn’t even know half of it.
+          Flakes, also known as James, the 22-year-old almost-23 femboy menace of Donation Nation, wasn’t just manipulating people or hosting fake giveaways.
+          He was running one of the biggest Robux theft operations the community had ever seen.
+        </p>
+        <p>
+          And he did all of this under the same name: Flakes.<br>
+          Like he wanted people to remember who scammed them.
+        </p>
+
+        <div class="title">Stealing Robux in Donation Nation</div>
+        <p>
+          James didn’t grind for anything. His entire Donation Nation “success” was built on tricking, lying, stealing, and manipulating anyone dumb enough to believe him.
+        </p>
+
+        <p>He used every scam possible:</p>
+        <ul class="clean">
+          <li>Pretending he would double players’ donations</li>
+          <li>Acting like he was a mod inspecting booths</li>
+          <li>Faking glitches to get access to someone’s stand</li>
+          <li>Telling people he was sponsored by big creators</li>
+          <li>Offering fake shoutouts for Robux</li>
+          <li>Pretending he was running SJC “tax events”</li>
+        </ul>
+
+        <p>
+          People saw him do it constantly.<br>
+          Noom, Lexie, Zonez, Val, and CXI all witnessed him scam kids for hours straight.<br>
+          Staroflight caught him telling some little kid he needed “temporary booth access” and then taking all the Robux and vanishing.<br>
+          Seppgen said he once watched Flakes pretend to cry in voice chat so people would feel bad and donate.
+        </p>
+        <p>
+          James didn’t even hide it well.<br>
+          He just did it fast.
+        </p>
+
+        <div class="title">Using stolen funds to boost his stats</div>
+        <p>
+          One of the biggest jokes in the community was how James bragged about his raised and donated numbers like he actually earned them.
+          But everyone found out the truth.
+        </p>
+        <p>
+          He was literally funneling stolen Robux into his own alts, then donating to himself to make it look like he was some elite top-tier player.
+        </p>
+        <p>
+          Jens and Noah watched him switch between accounts so fast that he confused his own usernames.<br>
+          Tripl3tsgamer said Flakes bragged about being in the “top donor circle” when all he did was steal from kids.
+        </p>
+        <p>
+          Every number he flexed was fake.<br>
+          Every donation he made was washed through alts.<br>
+          Every “achievement” he showed off was bought with someone else’s money.
+        </p>
+
+        <div class="title">Stealing Christmas presents</div>
+        <p>
+          December was when people realized James wasn’t just a scammer. He was a villain in a Hallmark movie but without the character development.
+        </p>
+        <p>
+          Players in SJC started losing their Christmas event gifts. Not currency. Actual special presents the staff spent time setting up.
+        </p>
+        <p>
+          And then Ronaldo told everyone he heard James brag about “holiday hunting.”<br>
+          Nobody knew what that meant until Leanne saw him pocketing Christmas gifts that were meant for new players.<br>
+          Bugz literally called him the “Grinch of SJC,” and the name stuck instantly.
+        </p>
+        <p>
+          James didn’t only steal Robux.<br>
+          He stole people’s Christmas.
+        </p>
+        <p>
+          Who wakes up in the morning and says, “Yeah, I’m gonna ruin someone’s holiday today”?<br>
+          James did.
+        </p>
+
+        <div class="title">Lying about everything</div>
+        <p>
+          By this point, the entire community understood that James couldn’t tell the truth to save his life. He lied about everything.
+        </p>
+        <p>
+          If he said he had to go to work,<br>
+          that meant he was stealing an account from some 10-year-old or convincing a kid to hand over a rare brainrot pet.
+        </p>
+        <p>
+          If he said he was helping someone,<br>
+          he was actually draining their booth or logging into one of his alts.
+        </p>
+        <p>
+          If he said he was tired,<br>
+          that meant he ran out of people to scam for the day.
+        </p>
+        <p>
+          Morse said James once forged fake screenshots to blame someone else for stealing from him, even though James was the one who did it.<br>
+          Chloe caught him lying about his age, job, earnings, schedule, family, and even his favorite color.
+        </p>
+        <p>
+          Half the things James said didn’t even make sense.<br>
+          But he said them with confidence.
+        </p>
+
+        <div class="title">Begging rich players and using them</div>
+        <p>
+          James acted like he was this powerful donor, but almost all his Robux came from two sources:
+        </p>
+        <ol class="clean">
+          <li>Offshore 15-year-olds farming Robux on PLS DONATE</li>
+          <li>Rich players he begged nonstop</li>
+        </ol>
+
+        <p>The people he drained included:</p>
+        <ul class="clean">
+          <li>Haz3mn</li>
+          <li>Zenuux</li>
+          <li>Vrevix</li>
+          <li>Sri</li>
+          <li>Quinn</li>
+          <li>Rox</li>
+          <li>rrwxva</li>
+          <li>PrinseElias</li>
+          <li>Inviz</li>
+          <li>Vexezifps</li>
+          <li>Shlopiezz</li>
+        </ul>
+
+        <p>
+          Every single one of them got used.<br>
+          He didn’t talk to them because he liked them.<br>
+          He talked to them because they had money.
+        </p>
+        <p>
+          Even Malb, who normally stays quiet, said James only messaged him when he wanted something.
+        </p>
+
+        <div class="title">Extra chaotic things James did</div>
+        <p>
+          James’ scam list became so big the community basically collected his stories like Pokémon cards.
+          Some things he did:
+        </p>
+        <ul class="clean">
+          <li>Created alts to defend himself in arguments</li>
+          <li>Made fake “official” SJC warnings to scare kids</li>
+          <li>Pretended to be cousins with a Roblox dev</li>
+          <li>Used a fake crying voice in VC to get sympathy</li>
+          <li>Gaslit players by saying they donated to the wrong booth</li>
+          <li>Sent AI-generated apology paragraphs and claimed he wrote them</li>
+          <li>Told people his grandma “accidentally deleted his Robux”</li>
+          <li>Said he was homeless while bragging about having 5 monitors</li>
+          <li>Claimed SJC depended on him even though everyone was happier without him</li>
+        </ul>
+        <p>
+          Even Malb, Noom, Lexie, and Ronaldo agreed he was like a “walking red flag dressed in thigh highs.”
+        </p>
+
+        <div class="title">The collapse of his reputation</div>
+        <p>
+          By the time everything came out, James wasn’t just disliked.<br>
+          He was infamous.
+        </p>
+        <p>
+          Everyone from Staroflight to Bugz had a Flakes horror story.<br>
+          He became the biggest scammer Donation Nation had ever seen.
+        </p>
+        <p>
+          And the worst part?<br>
+          He still acted like he did nothing wrong.
+        </p>
+        <p>
+          But the SJC community remembered.<br>
+          Every scam.<br>
+          Every lie.<br>
+          Every stolen Christmas present.<br>
+          Every manipulative message.
+        </p>
+        <p>No amount of fake giveaways or uwu voices could hide who he really was.</p>
+
+        <big>The Robux Theft Era of Flakes.</big>
+      </div>
+
+      <p class="muted">
+        Safety note: please avoid this person and their devious activites on DISCORD and SJC at all costs.
+      </p>
+    </section>
+
+    <div class="actions">
+      <a class="btn" href="part02.html">← BACK TO PART 02</a>
+      <a class="btn" href="index.html">HOME</a>
+      <a class="btn locked" id="locked4" href="#" aria-disabled="true">NEXT FILE - PART 04 (LOCKED)</a>
+    </div>
+  </main>
+
+  <!-- Hover popup for locked button -->
+  <div id="lockedPopup" class="locked-popup">Please wait…</div>
+
+  <script>
+    // ---- NAME HIGHLIGHTING ----
+    const MANUAL_NAMES = [
+      "Morse","Itz_dev","Noom","Staroflight","ZylozVA","Lexie","Zonez","Val","KindlyVernon",
+      "Seppgen","CXI","Jens","Noah","Chloe","Ronaldo","Leanne","Bugz","Tripl3tsgamer",
+      "Haz3mn","Zenuux","Vrevix","Sri","Quinn","Rox","rrwxva","PrinseElias","Inviz","Vexezifps",
+      "Shlopiezz","Malb"
+    ];
+    const AUTO_DETECT = true;
+
+    function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+    function wrapMatchesInElement(rootEl, regex){
+      const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+        acceptNode(node){
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          const p = node.parentElement;
+          if (!p) return NodeFilter.FILTER_REJECT;
+          if (p.closest("script, style")) return NodeFilter.FILTER_REJECT;
+          if (p.closest(".nm")) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+
+      for (const node of nodes){
+        const text = node.nodeValue;
+        if (!regex.test(text)) continue;
+        regex.lastIndex = 0;
+
+        const frag = document.createDocumentFragment();
+        let last = 0, m;
+
+        while ((m = regex.exec(text)) !== null){
+          const start = m.index;
+          const matchText = m[0];
+
+          if (start > last) frag.appendChild(document.createTextNode(text.slice(last, start)));
+
+          const span = document.createElement("span");
+          span.className = "nm";
+          span.textContent = matchText;
+          frag.appendChild(span);
+
+          last = start + matchText.length;
+        }
+
+        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+      }
+    }
+
+    function collectAutoHandles(rootEl){
+      const fullText = rootEl.innerText || "";
+      const candidates = new Set();
+      const tokenRe = /\b[a-zA-Z0-9_]{3,20}\b/g;
+
+      for (const tok of fullText.match(tokenRe) || []){
+        if (tok.includes("_") || /\d/.test(tok)) candidates.add(tok);
+      }
+      return [...candidates];
+    }
+
+    function runNameHighlight(){
+      const root = document.getElementById("fileContent");
+      if (!root) return;
+
+      const names = new Set(MANUAL_NAMES.map(s => s.trim()).filter(Boolean));
+      if (AUTO_DETECT){
+        for (const n of collectAutoHandles(root)) names.add(n);
+      }
+      if (names.size === 0) return;
+
+      const list = [...names].sort((a,b) => b.length - a.length).map(escapeRegExp);
+      const re = new RegExp("\\b(" + list.join("|") + ")\\b", "g");
+      wrapMatchesInElement(root, re);
+    }
+
+    // ---- AUTO SCROLL (30s) ----
+    function startAutoScroll(){
+      const panel = document.querySelector(".content");
+      if (!panel) return;
+
+      const maxScroll = panel.scrollHeight - panel.clientHeight;
+      if (maxScroll <= 0) return;
+
+      const DURATION_MS = 30000;
+      let rafId = null;
+      let cancelled = false;
+
+      const cancel = () => {
+        if (cancelled) return;
+        cancelled = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        removeListeners();
+      };
+
+      const onUserIntent = () => cancel();
+
+      function addListeners(){
+        panel.addEventListener("wheel", onUserIntent, { passive:true });
+        panel.addEventListener("touchstart", onUserIntent, { passive:true });
+        panel.addEventListener("pointerdown", onUserIntent, { passive:true });
+        window.addEventListener("keydown", onUserIntent);
+      }
+
+      function removeListeners(){
+        panel.removeEventListener("wheel", onUserIntent);
+        panel.removeEventListener("touchstart", onUserIntent);
+        panel.removeEventListener("pointerdown", onUserIntent);
+        window.removeEventListener("keydown", onUserIntent);
+      }
+
+      function easeInOutCubic(t){
+        return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+      }
+
+      panel.scrollTop = 0;
+      const startTime = performance.now();
+
+      addListeners();
+
+      const step = (now) => {
+        if (cancelled) return;
+        const t = Math.min(1, (now - startTime) / DURATION_MS);
+        panel.scrollTop = maxScroll * easeInOutCubic(t);
+        if (t < 1) rafId = requestAnimationFrame(step);
+        else removeListeners();
+      };
+
+      rafId = requestAnimationFrame(step);
+    }
+
+    // ---- LOCKED POPUP (Part 04) ----
+    const TZ = "America/New_York";
+
+    function getPartsInTZ(date, timeZone){
+      const dtf = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      });
+      const parts = dtf.formatToParts(date);
+      const map = {};
+      for (const p of parts) if (p.type !== "literal") map[p.type] = p.value;
+      return {
+        year: Number(map.year),
+        month: Number(map.month),
+        day: Number(map.day),
+        hour: Number(map.hour),
+        minute: Number(map.minute),
+        second: Number(map.second)
+      };
+    }
+
+    function tzOffsetMs(timeZone, date){
+      const p = getPartsInTZ(date, timeZone);
+      const asUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+      return asUTC - date.getTime();
+    }
+
+    function zonedTimeToUtcMs({year, month, day, hour, minute, second}, timeZone){
+      const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second || 0);
+      const guessDate = new Date(utcGuess);
+      const offset = tzOffsetMs(timeZone, guessDate);
+      return utcGuess - offset;
+    }
+
+    const TARGET_MS = zonedTimeToUtcMs({
+      year: 2026,
+      month: 2,
+      day: 18,
+      hour: 16,
+      minute: 0,
+      second: 0
+    }, TZ);
+
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    function getRemaining(){
+      let diff = TARGET_MS - Date.now();
+      if (diff < 0) diff = 0;
+      const totalSec = Math.floor(diff / 1000);
+      return {
+        diff,
+        h: Math.floor(totalSec / 3600),
+        m: Math.floor((totalSec % 3600) / 60),
+        s: totalSec % 60
+      };
+    }
+
+    function formatWait(){
+      const { diff, h, m, s } = getRemaining();
+      if (diff <= 0) return "Please wait… Unlocking soon";
+      return `Please wait… ${pad2(h)}h ${pad2(m)}m ${pad2(s)}s`;
+    }
+
+    function initLockedPopup(){
+      const lockedBtn = document.getElementById("locked4");
+      const popup = document.getElementById("lockedPopup");
+      if (!lockedBtn || !popup) return;
+
+      // never navigate
+      lockedBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      let hoverInterval = null;
+
+      function positionPopup(){
+        const r = lockedBtn.getBoundingClientRect();
+        popup.style.left = (r.left + r.width/2) + "px";
+        popup.style.top = (r.top - 14) + "px";
+      }
+
+      lockedBtn.addEventListener("mouseenter", () => {
+        popup.textContent = formatWait();
+        positionPopup();
+        popup.style.opacity = "1";
+        popup.style.transform = "translate(-50%, -18px)";
+
+        hoverInterval = setInterval(() => {
+          popup.textContent = formatWait();
+          positionPopup();
+        }, 250);
+      });
+
+      lockedBtn.addEventListener("mouseleave", () => {
+        popup.style.opacity = "0";
+        popup.style.transform = "translate(-50%, -10px)";
+        if (hoverInterval) clearInterval(hoverInterval);
+        hoverInterval = null;
+      });
+
+      window.addEventListener("resize", () => {
+        if (popup.style.opacity === "1") positionPopup();
+      });
+      window.addEventListener("scroll", () => {
+        if (popup.style.opacity === "1") positionPopup();
+      }, { passive:true });
+    }
+
+    window.addEventListener("load", () => {
+      runNameHighlight();
+      setTimeout(startAutoScroll, 250);
+      initLockedPopup();
+    });
+  </script>
+</body>
+</html>
